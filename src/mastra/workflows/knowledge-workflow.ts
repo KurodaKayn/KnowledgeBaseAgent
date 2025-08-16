@@ -25,7 +25,7 @@ const initializeKnowledgeBase = createStep({
     const { text } = await agent.generate([
       {
         role: "user",
-        content: `请初始化知识库，加载GitHub仓库中的所有markdown文档。使用github-rag-search工具，action设为init${inputData.forceReload ? "，forceReload设为true" : ""}。`,
+        content: `请初始化知识库，加载GitHub仓库中的所有markdown文档。使用github-vector-rag工具，action设为init${inputData.forceReload ? "，forceReload设为true" : ""}。`,
       },
     ]);
 
@@ -60,7 +60,7 @@ const searchKnowledgeBase = createStep({
     const { text } = await agent.generate([
       {
         role: "user",
-        content: `请在知识库中搜索关于"${inputData.query}"的信息。使用github-rag-search工具，action设为search，query设为"${inputData.query}"，maxResults设为${inputData.maxResults}。`,
+        content: `请在知识库中搜索关于"${inputData.query}"的信息。使用github-vector-rag工具，action设为search，query设为"${inputData.query}"，maxResults设为${inputData.maxResults}。`,
       },
     ]);
 
@@ -166,7 +166,7 @@ const directSearch = createStep({
     const { text } = await agent.generate([
       {
         role: "user",
-        content: `请在知识库中搜索关于"${inputData.query}"的信息。使用github-rag-search工具，action设为search，query设为"${inputData.query}"，maxResults设为${inputData.maxResults}。然后基于搜索结果提供详细的中文答案。`,
+        content: `请在知识库中搜索关于"${inputData.query}"的信息。使用github-vector-rag工具，action设为search，query设为"${inputData.query}"，maxResults设为${inputData.maxResults}。然后基于搜索结果提供详细的中文答案。`,
       },
     ]);
 

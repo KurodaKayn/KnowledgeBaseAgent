@@ -1,10 +1,12 @@
 import { Agent } from "@mastra/core/agent";
 import { createOpenAI } from "@ai-sdk/openai";
-import { createGitHubRAGSearchTool } from "../tools/github-rag-search-tool";
+import { createGitHubVectorRAGTool } from "../tools/github-vector-rag-tool";
+import { Memory } from "@mastra/memory";
+import { LibSQLStore } from "@mastra/libsql";
 
 const deepseek = createOpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: "https://api.deepseek.com",
+  apiKey: process.env.AGENT_KEY,
+  baseURL: process.env.AGENT_URL,
 });
 
 const REPO_CONFIG = {
@@ -57,9 +59,13 @@ export const createKnowledgeAgent = (
 当前知识库来源: ${targetRepo}`,
 
     model: deepseek("deepseek-chat"),
-
+    memory: new Memory({
+      storage: new LibSQLStore({
+        url: "file:../mastra.db",
+      }),
+    }),
     tools: {
-      githubRAGSearch: createGitHubRAGSearchTool(targetRepo, token),
+      githubVectorRAG: createGitHubVectorRAGTool(targetRepo, token),
     },
   });
 };
