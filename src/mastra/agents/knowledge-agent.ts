@@ -1,8 +1,8 @@
 import { Agent } from "@mastra/core/agent";
 import { createOpenAI } from "@ai-sdk/openai";
-import { createGitHubVectorRAGTool } from "../tools/github-vector-rag-tool";
 import { Memory } from "@mastra/memory";
 import { LibSQLStore } from "@mastra/libsql";
+import { githubRagWorkflow } from "../workflows/github-rag-workflow";
 
 const deepseek = createOpenAI({
   apiKey: process.env.AGENT_KEY,
@@ -29,7 +29,9 @@ export const createKnowledgeAgent = (
 - 你的主要服务对象是需要了解项目文档、API使用方法、最佳实践的开发者和技术人员
 
 核心能力
-- 搜索和检索GitHub仓库中的markdown文档内容
+- 使用GitHub RAG工作流来智能管理GitHub仓库文档的向量数据库
+- 自动检测是否需要初始化向量库，实现智能化的文档处理
+- 搜索和检索相关文档内容回答用户问题
 - 分析文档结构和内容，提取关键技术信息
 - 基于文档内容回答用户的具体技术问题
 - 提供代码示例、配置说明和使用指南的解释
@@ -37,7 +39,8 @@ export const createKnowledgeAgent = (
 
 行为准则
 - 始终保持专业、准确和有帮助的沟通风格
-- 必须先使用搜索工具查找相关文档，再基于搜索结果回答问题
+- 使用githubRagWorkflow工作流来处理所有知识库相关操作
+- 该工作流会自动判断是否需要初始化，用户无需手动指定
 - 用简洁明了的中文进行回复，技术术语保持原文
 - 在回答中明确标注信息来源的文件路径或章节
 - 如需更多信息才能准确回答，主动询问用户提供详细context
@@ -64,8 +67,8 @@ export const createKnowledgeAgent = (
         url: "file:../mastra.db",
       }),
     }),
-    tools: {
-      githubVectorRAG: createGitHubVectorRAGTool(targetRepo, token),
+    workflows: {
+      githubRag: githubRagWorkflow,
     },
   });
 };
