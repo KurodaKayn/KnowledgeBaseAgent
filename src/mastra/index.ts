@@ -3,6 +3,7 @@ import { PinoLogger } from "@mastra/loggers";
 import { LibSQLStore } from "@mastra/libsql";
 import { githubRagWorkflow } from "./workflows";
 import { knowledgeAgent } from "./agents/knowledge-agent";
+import { databaseConfig, loggingConfig } from "../config";
 
 export const mastra = new Mastra({
   workflows: {
@@ -10,10 +11,11 @@ export const mastra = new Mastra({
   },
   agents: { knowledgeAgent },
   storage: new LibSQLStore({
-    url: ":memory:",
+    url: databaseConfig.main.url,
+    authToken: databaseConfig.main.authToken,
   }),
   logger: new PinoLogger({
-    name: "Mastra",
-    level: "info",
+    name: loggingConfig.name,
+    level: loggingConfig.level,
   }),
 });

@@ -1,6 +1,7 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { Octokit } from "@octokit/rest";
+import { githubConfig } from "../../config";
 
 /**
  * GitHub搜索工具 - 获取GitHub仓库中的markdown文件
@@ -15,11 +16,13 @@ export const githubSearchTool = createTool({
     recursive: z.boolean().optional().default(true).describe("是否递归搜索"),
   }),
   outputSchema: z.object({
-    files: z.array(z.object({
-      name: z.string(),
-      path: z.string(),
-      sha: z.string(),
-    })),
+    files: z.array(
+      z.object({
+        name: z.string(),
+        path: z.string(),
+        sha: z.string(),
+      })
+    ),
     totalCount: z.number(),
   }),
   execute: async ({ context }) => {
@@ -27,12 +30,15 @@ export const githubSearchTool = createTool({
     const [owner, repo] = repoUrl.split("/");
 
     const octokit = new Octokit({
-      auth: githubToken || process.env.GITHUB_TOKEN,
+      auth: githubToken || githubConfig.token,
     });
 
     const files: Array<{ name: string; path: string; sha: string }> = [];
 
-    async function getMarkdownFiles(searchPath: string, isRecursive: boolean): Promise<void> {
+    async function getMarkdownFiles(
+      searchPath: string,
+      isRecursive: boolean
+    ): Promise<void> {
       try {
         const response = await octokit.rest.repos.getContent({
           owner,
@@ -40,11 +46,16 @@ export const githubSearchTool = createTool({
           path: searchPath,
         });
 
-        const contents = Array.isArray(response.data) ? response.data : [response.data];
+        const contents = Array.isArray(response.data)
+          ? response.data
+          : [response.data];
 
         for (const item of contents) {
           if ("type" in item) {
-            if (item.type === "file" && item.name.toLowerCase().endsWith(".md")) {
+            if (
+              item.type === "file" &&
+              item.name.toLowerCase().endsWith(".md")
+            ) {
               files.push({
                 name: item.name,
                 path: item.path,

@@ -1,6 +1,7 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { MDocument } from "@mastra/rag";
+import { processingConfig } from "../../config";
 
 /**
  * 文档处理工具 - 将markdown文档分块处理
@@ -11,18 +12,32 @@ export const documentProcessTool = createTool({
   inputSchema: z.object({
     content: z.string().describe("文档内容"),
     filePath: z.string().describe("文件路径"),
-    chunkStrategy: z.literal("semantic-markdown").optional().default("semantic-markdown").describe("分块策略"),
-    chunkSize: z.number().optional().default(500).describe("分块大小"),
-    joinThreshold: z.number().optional().default(500).describe("合并阈值"),
+    chunkStrategy: z
+      .literal("semantic-markdown")
+      .optional()
+      .default(processingConfig.document.chunkStrategy)
+      .describe("分块策略"),
+    chunkSize: z
+      .number()
+      .optional()
+      .default(processingConfig.document.chunkSize)
+      .describe("分块大小"),
+    joinThreshold: z
+      .number()
+      .optional()
+      .default(processingConfig.document.joinThreshold)
+      .describe("合并阈值"),
   }),
   outputSchema: z.object({
-    chunks: z.array(z.object({
-      content: z.string(),
-      source: z.string(),
-      title: z.string().optional(),
-      section: z.string().optional(),
-      id: z.string(),
-    })),
+    chunks: z.array(
+      z.object({
+        content: z.string(),
+        source: z.string(),
+        title: z.string().optional(),
+        section: z.string().optional(),
+        id: z.string(),
+      })
+    ),
     totalChunks: z.number(),
   }),
   execute: async ({ context }) => {
@@ -52,7 +67,9 @@ export const documentProcessTool = createTool({
         totalChunks: processedChunks.length,
       };
     } catch (error) {
-      throw new Error(`文档处理失败: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `文档处理失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   },
 });

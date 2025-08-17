@@ -1,12 +1,13 @@
 import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { Octokit } from "@octokit/rest";
+import { githubConfig } from "../../config";
 
 /**
  * GitHub文件内容获取工具
  */
 export const githubContentTool = createTool({
-  id: "github-content-tool", 
+  id: "github-content-tool",
   description: "获取GitHub仓库中指定文件的内容",
   inputSchema: z.object({
     repoUrl: z.string().describe("GitHub仓库URL，格式为 owner/repo"),
@@ -23,7 +24,7 @@ export const githubContentTool = createTool({
     const [owner, repo] = repoUrl.split("/");
 
     const octokit = new Octokit({
-      auth: githubToken || process.env.GITHUB_TOKEN,
+      auth: githubToken || githubConfig.token,
     });
 
     try {
@@ -34,7 +35,9 @@ export const githubContentTool = createTool({
       });
 
       if ("content" in response.data) {
-        const content = Buffer.from(response.data.content, "base64").toString("utf-8");
+        const content = Buffer.from(response.data.content, "base64").toString(
+          "utf-8"
+        );
         return {
           content,
           filePath,
@@ -44,7 +47,9 @@ export const githubContentTool = createTool({
 
       throw new Error("文件内容获取失败");
     } catch (error) {
-      throw new Error(`获取文件内容失败: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `获取文件内容失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   },
 });

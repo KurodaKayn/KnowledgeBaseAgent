@@ -3,26 +3,22 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { Memory } from "@mastra/memory";
 import { LibSQLStore } from "@mastra/libsql";
 import { githubRagWorkflow } from "../workflows/github-rag-workflow";
+import { apiConfig, databaseConfig, githubConfig } from "../../config";
 
 const deepseek = createOpenAI({
-  apiKey: process.env.AGENT_KEY,
-  baseURL: process.env.AGENT_URL,
+  apiKey: apiConfig.ai.agent.apiKey,
+  baseURL: apiConfig.ai.agent.baseUrl,
 });
-
-const REPO_CONFIG = {
-  defaultUrl: process.env.GITHUB_REPO_URL || "facebook/react",
-  token: process.env.GITHUB_TOKEN,
-};
 
 export const createKnowledgeAgent = (
   repoUrl?: string,
   githubToken?: string
 ) => {
-  const targetRepo = repoUrl || REPO_CONFIG.defaultUrl;
-  const token = githubToken || REPO_CONFIG.token;
+  const targetRepo = repoUrl || githubConfig.defaultRepo;
+  const token = githubToken || githubConfig.token;
 
   return new Agent({
-    name: "knowledgeAgent",
+    name: "KnowledgeAgent",
     instructions: `角色定义
 - 你是一个专业的GitHub仓库文档知识库助手
 - 你的核心职责是基于指定GitHub仓库中的markdown文档为用户提供准确的技术信息和解答
@@ -61,10 +57,11 @@ export const createKnowledgeAgent = (
 
 当前知识库来源: ${targetRepo}`,
 
-    model: deepseek("deepseek-chat"),
+    model: deepseek(apiConfig.ai.agent.model),
     memory: new Memory({
       storage: new LibSQLStore({
-        url: "file:../mastra.db",
+        url: databaseConfig.main.url,
+        authToken: databaseConfig.main.authToken,
       }),
     }),
     workflows: {

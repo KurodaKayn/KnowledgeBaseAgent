@@ -3,10 +3,11 @@ import { z } from "zod";
 import { LibSQLVector } from "@mastra/libsql";
 import { embed } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { apiConfig, databaseConfig, processingConfig } from "../../config";
 
 const openai = createOpenAI({
-  baseURL: process.env.EMBEDDING_AI_URL || "https://api.openai.com/v1",
-  apiKey: process.env.EMBEDDING_AI_KEY,
+  baseURL: apiConfig.ai.embedding.baseUrl,
+  apiKey: apiConfig.ai.embedding.apiKey,
 });
 
 /**
@@ -17,21 +18,30 @@ export const vectorSearchTool = createTool({
   description: "在向量数据库中搜索与查询相关的内容",
   inputSchema: z.object({
     query: z.string().describe("搜索查询"),
-    indexName: z.string().default("github_docs").describe("索引名称"),
-    maxResults: z.number().optional().default(5).describe("最大返回结果数"),
+    indexName: z
+      .string()
+      .default(processingConfig.vector.defaultIndexName)
+      .describe("索引名称"),
+    maxResults: z
+      .number()
+      .optional()
+      .default(processingConfig.workflow.maxResults)
+      .describe("最大返回结果数"),
     dbPath: z.string().optional().describe("数据库路径"),
   }),
   outputSchema: z.object({
     success: z.boolean(),
     query: z.string(),
-    results: z.array(z.object({
-      content: z.string(),
-      source: z.string(),
-      title: z.string().optional(),
-      section: z.string().optional(),
-      relevanceScore: z.number(),
-      summary: z.string(),
-    })),
+    results: z.array(
+      z.object({
+        content: z.string(),
+        source: z.string(),
+        title: z.string().optional(),
+        section: z.string().optional(),
+        relevanceScore: z.number(),
+        summary: z.string(),
+      })
+    ),
     count: z.number(),
   }),
   execute: async ({ context }) => {
@@ -40,13 +50,13 @@ export const vectorSearchTool = createTool({
     try {
       // 初始化向量存储
       const vectorStore = new LibSQLVector({
-        connectionUrl: dbPath || process.env.DATABASE_URL || "file:vector-store.db",
-        authToken: process.env.DATABASE_AUTH_TOKEN,
+        connectionUrl: dbPath || databaseConfig.vector.url,
+        authToken: databaseConfig.vector.authToken,
       });
 
       // 将查询转换为嵌入向量
       const { embedding } = await embed({
-        model: openai.embedding("text-embedding-3-small"),
+        model: openai.embedding(apiConfig.ai.embedding.model),
         value: query,
       });
 
@@ -54,11 +64,11 @@ export const vectorSearchTool = createTool({
       const searchResults = await vectorStore.query({
         indexName,
         queryVector: embedding,
-        topK: maxResults || 5,
+        topK: maxResults || processingConfig.workflow.maxResults,
       });
 
       // 格式化结果
-      const formattedResults = searchResults.map(result => ({
+      const formattedResults = searchResults.map((result) => ({
         content: result.metadata?.text || "",
         source: result.metadata?.source || "",
         title: result.metadata?.title || "",
@@ -89,9 +99,10 @@ export const vectorSearchTool = createTool({
  */
 function generateSummary(content: string): string {
   const firstParagraph = content.split("\n\n")[0];
-  const summary = firstParagraph.length > 150
-    ? firstParagraph.substring(0, 147) + "..."
-    : firstParagraph;
+  const summary =
+    firstParagraph.length > 150
+      ? firstParagraph.substring(0, 147) + "..."
+      : firstParagraph;
 
   return summary.replace(/^#+\s*/, "");
 }

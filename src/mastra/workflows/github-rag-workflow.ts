@@ -8,6 +8,7 @@ import {
   vectorStoreTool,
   vectorSearchTool,
 } from "../tools";
+import { processingConfig } from "../../config";
 
 const checkInitializationStep = createStep({
   id: "check-initialization",
@@ -153,9 +154,9 @@ const initializeVectorStoreStep = createStep({
               context: {
                 content: contentResult.content,
                 filePath: file.path,
-                chunkStrategy: "semantic-markdown",
-                chunkSize: 1000,
-                joinThreshold: 500,
+                chunkStrategy: processingConfig.document.chunkStrategy,
+                chunkSize: processingConfig.document.chunkSize,
+                joinThreshold: processingConfig.document.joinThreshold,
               },
               runtimeContext: new RuntimeContext(),
             });
@@ -191,7 +192,7 @@ const initializeVectorStoreStep = createStep({
         chunks: allChunks,
         indexName: inputData.indexName,
         dbPath: inputData.dbPath,
-        batchSize: 50,
+        batchSize: processingConfig.vector.storeBatchSize,
       },
       runtimeContext: new RuntimeContext(),
     });
@@ -323,16 +324,24 @@ export const githubRagWorkflow = createWorkflow({
     indexName: z
       .string()
       .optional()
-      .default("github_docs")
+      .default(processingConfig.vector.defaultIndexName)
       .describe("向量索引名称"),
     dbPath: z.string().optional().describe("数据库路径"),
-    maxResults: z.number().optional().default(5).describe("最大搜索结果数"),
+    maxResults: z
+      .number()
+      .optional()
+      .default(processingConfig.workflow.maxResults)
+      .describe("最大搜索结果数"),
     forceReload: z
       .boolean()
       .optional()
       .default(false)
       .describe("是否强制重新初始化"),
-    batchSize: z.number().optional().default(10).describe("文档处理批次大小"),
+    batchSize: z
+      .number()
+      .optional()
+      .default(processingConfig.workflow.batchSize)
+      .describe("文档处理批次大小"),
   }),
   outputSchema: z.object({
     answer: z.string(),
@@ -349,11 +358,12 @@ export const githubRagWorkflow = createWorkflow({
       query: inputData.query,
       repoUrl: inputData.repoUrl,
       githubToken: inputData.githubToken,
-      indexName: inputData.indexName || "github_docs",
+      indexName:
+        inputData.indexName || processingConfig.vector.defaultIndexName,
       dbPath: inputData.dbPath,
-      maxResults: inputData.maxResults || 5,
+      maxResults: inputData.maxResults || processingConfig.workflow.maxResults,
       forceReload: inputData.forceReload || false,
-      batchSize: inputData.batchSize || 10,
+      batchSize: inputData.batchSize || processingConfig.workflow.batchSize,
     };
   })
   .then(checkInitializationStep)
